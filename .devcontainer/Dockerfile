@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/rust:0-1
 # Substrate-compatible Rust version.
 # Pin rust to a specific version of nightly that contains all the required components (some releases don't include 
 # rust fmt or rls). In order to check for more recent complete nightly releases run `rustup install --profile complete nightly`.
-ARG RUST_VERSION=1.66.1
+ARG RUST_VERSION=1.68.1
 RUN rustup install $RUST_VERSION \
     && rustup update \
     && rustup default $RUST_VERSION \
