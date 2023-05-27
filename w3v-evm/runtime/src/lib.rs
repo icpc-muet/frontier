@@ -13,10 +13,8 @@ use frame_system::{ EnsureRoot,
 	limits::{BlockLength, BlockWeights},
 };
 use scale_codec::{Decode, Encode};
-use frame_election_provider_support::{onchain, SequentialPhragmen};
 
 use sp_api::impl_runtime_apis;
-use sp_consensus_babe::Slot;
 // use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
@@ -61,12 +59,16 @@ use pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTra
 use pallet_evm::{
 	Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner,
 };
-use pallet_session::historical as session_historical;
 #[cfg(any(feature = "std", test))]
 pub use pallet_staking::StakerStatus;
 
 mod bag_thresholds;
 pub mod constants;
+
+use frame_election_provider_support::{onchain, SequentialPhragmen};
+use pallet_session::historical as session_historical;
+use sp_consensus_babe::Slot;
+
 
 // A few exports that help ease life for downstream crates.
 pub use frame_system::Call as SystemCall;
