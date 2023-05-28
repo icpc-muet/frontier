@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/rust:0-1
 # Substrate-compatible Rust version.
 # Pin rust to a specific version of nightly that contains all the required components (some releases don't include 
 # rust fmt or rls). In order to check for more recent complete nightly releases run `rustup install --profile complete nightly`.
-ARG RUST_VERSION=1.68.1
+ARG RUST_VERSION=1.69
 RUN rustup install $RUST_VERSION \
     && rustup update \
     && rustup default $RUST_VERSION \
@@ -20,6 +20,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         clang \
         libclang-dev \
         lld
+
+# add protobuf compiler
+RUN apt-get update && apt-get install -y protobuf-compiler
 
 # Install sccache for cached builds
 ARG SCCACHE_VER="0.2.15"
@@ -36,8 +39,7 @@ ENV RUSTC_WRAPPER=sccache
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get install -y nodejs
 
-# add protobuf compiler
-RUN apt-get update && apt-get install -y protobuf-compiler
+
 
 
 # Remove unnecessary packages.

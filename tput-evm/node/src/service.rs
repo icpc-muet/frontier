@@ -11,12 +11,17 @@ use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_service::{error::Error as ServiceError, Configuration, PartialComponents, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
 use sp_api::{ConstructRuntimeApi, TransactionFor};
-use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
-use sp_core::U256;
+// use sp_consensus_babe::sr25519::AuthorityPair as BabePair;
+use sc_consensus_babe::{self, SlotProportion};
+use sp_core::{ crypto::Pair, U256 };
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
-// Runtime
+
+
 use frontier_template_runtime::{opaque::Block, Hash, TransactionConverter};
+
+// import RuntimeApi function configuration
+
 
 use crate::{
 	cli::Sealing,
@@ -39,6 +44,7 @@ type GrandpaBlockImport<Client> =
 	sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, Client, FullSelectChain>;
 type GrandpaLinkHalf<Client> = sc_finality_grandpa::LinkHalf<Block, Client, FullSelectChain>;
 type BoxBlockImport<Client> = sc_consensus::BoxBlockImport<Block, TransactionFor<Client, Block>>;
+// type BabeLink<Client> = sc_consensus_babe::BabeLink<Block>;
 
 pub fn new_partial<RuntimeApi, Executor, BIQ>(
 	config: &Configuration,
@@ -116,6 +122,7 @@ where
 	});
 
 	let select_chain = sc_consensus::LongestChain::new(backend.clone());
+
 	let (grandpa_block_import, grandpa_link) = sc_finality_grandpa::block_import(
 		client.clone(),
 		&client,
@@ -123,12 +130,60 @@ where
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
+	let justification_import = grandpa_block_import.clone();
+	
+	// get configuration from BabeConfig
+
+
+	// get configuration from BabeConfig of BabeApi
+	// let babe_link = BabeConfig::configuration::<RuntimeApi::RuntimeApi, _>(&*client)?;
+	// Assume you're within the context of a function in your pallet
+	//let babe_link = BabeApi<_>>::configuration()
+	//.expect("Failed to fetch babe configuration");
+
+
+	
+	let (block_import, babe_link) = sc_consensus_babe::block_import(
+		sc_consensus_babe::Config::get(&*client)?,
+		grandpa_block_import,
+		client.clone(),
+	)?;
+	
+
+	let slot_duration = babe_link.config().slot_duration();
+
 	let frontier_backend = Arc::new(FrontierBackend::open(
 		client.clone(),
 		&config.database,
 		&db_config_dir(config),
 	)?);
+
+	
+	let import_queue = sc_consensus_babe::import_queue(
+		babe_link.clone(),
+		block_import.clone(),
+		Some(Box::new(justification_import)),
+		client.clone(),
+		select_chain.clone(),
+		move |_, ()| async move {
+			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+
+			let slot =
+				sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+					*timestamp,
+					slot_duration,
+				);
+
+			Ok((slot, timestamp))
+		},
+		&task_manager.spawn_essential_handle(),
+		config.prometheus_registry(),
+		telemetry.as_ref().map(|x| x.handle()),
+	)?;
+	
+	/*
 	let (import_queue, block_import) = build_import_queue(
+		&babe_link,
 		client.clone(),
 		config,
 		eth_config,
@@ -136,8 +191,10 @@ where
 		telemetry.as_ref().map(|x| x.handle()),
 		grandpa_block_import,
 		frontier_backend.clone(),
-	)?;
-
+	)?; /// need more work here
+	*/
+	let import_setup = (block_import, grandpa_link, babe_link);
+	
 	let transaction_pool = sc_transaction_pool::BasicPool::new_full(
 		config.transaction_pool.clone(),
 		config.role.is_authority().into(),
@@ -154,12 +211,12 @@ where
 		select_chain,
 		import_queue,
 		transaction_pool,
-		other: (telemetry, block_import, grandpa_link, frontier_backend),
+		other: (telemetry, Box::new(block_import), grandpa_link, frontier_backend),
 	})
 }
 
-/// Build the import queue for the template runtime (aura + grandpa).
-pub fn build_aura_grandpa_import_queue<RuntimeApi, Executor>(
+/// Build the import queue for the template runtime (babe + grandpa).
+pub fn build_babe_grandpa_import_queue<RuntimeApi, Executor>(
 	client: Arc<FullClient<RuntimeApi, Executor>>,
 	config: &Configuration,
 	eth_config: &EthConfiguration,
@@ -187,21 +244,41 @@ where
 		frontier_backend,
 	);
 
-	let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
+	
+	//let slot_duration = sc_consensus_babe::slot_duration(&*client)?;
+	let slot_duration = babe_link.config().slot_duration();
+	
+
+	// -----------------  build import queue -----------------
 	let target_gas_price = eth_config.target_gas_price;
+
 	let create_inherent_data_providers = move |_, ()| async move {
 		let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 		let slot =
-			sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+			sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
 				*timestamp,
 				slot_duration,
 			);
 		let dynamic_fee = fp_dynamic_fee::InherentDataProvider(U256::from(target_gas_price));
 		Ok((slot, timestamp, dynamic_fee))
 	};
+	
+	let import_queue = sc_consensus_babe::import_queue(
+		babe_link.clone(),
+		frontier_block_import.clone(),
+		Some(Box::new(justification_import)),
+		client.clone(),
+		select_chain.clone(),
+		create_inherent_data_providers,
+		&task_manager.spawn_essential_handle(),
+		config.prometheus_registry(),
+		telemetry.as_ref().map(|x| x.handle()),
+	)?;
+	
 
-	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _>(
-		sc_consensus_aura::ImportQueueParams {
+	/*
+	let import_queue = sc_consensus_babe::import_queue(
+		sc_consensus_babe::ImportQueueParams {
 			block_import: frontier_block_import.clone(),
 			justification_import: Some(Box::new(grandpa_block_import)),
 			client,
@@ -210,10 +287,11 @@ where
 			registry: config.prometheus_registry(),
 			check_for_equivocation: Default::default(),
 			telemetry,
-			compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
+			compatibility_mode: sc_consensus_babe::CompatibilityMode::None,
 		},
 	)
 	.map_err::<ServiceError, _>(Into::into)?;
+	*/
 
 	Ok((import_queue, Box::new(frontier_block_import)))
 }
@@ -257,6 +335,10 @@ pub fn new_full<RuntimeApi, Executor>(
 	mut config: Configuration,
 	eth_config: EthConfiguration,
 	sealing: Option<Sealing>,
+	//with_startup_data: impl FnOnce(
+	//	&sc_consensus_babe::BabeLink<Block>,
+	//),
+	
 ) -> Result<TaskManager, ServiceError>
 where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
@@ -265,11 +347,15 @@ where
 		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 {
+	/*
 	let build_import_queue = if sealing.is_some() {
 		build_manual_seal_import_queue::<RuntimeApi, Executor>
 	} else {
-		build_aura_grandpa_import_queue::<RuntimeApi, Executor>
+		build_babe_grandpa_import_queue::<RuntimeApi, Executor>
 	};
+	*/
+
+	let build_import_queue = build_babe_grandpa_import_queue::<RuntimeApi, Executor>;
 
 	let PartialComponents {
 		client,
@@ -279,6 +365,7 @@ where
 		keystore_container,
 		select_chain,
 		transaction_pool,
+		// other: (mut telemetry, import_setup, frontier_backend),
 		other: (mut telemetry, block_import, grandpa_link, frontier_backend),
 	} = new_partial(&config, &eth_config, build_import_queue)?;
 
@@ -414,6 +501,10 @@ where
 		fee_history_cache_limit,
 	);
 
+	// added new
+	//let (block_import, grandpa_link, babe_link) = import_setup;
+	//(with_startup_data)(&block_import, &babe_link);
+
 	if role.is_authority() {
 		// manual-seal authorship
 		if let Some(sealing) = sealing {
@@ -443,11 +534,19 @@ where
 			telemetry.as_ref().map(|x| x.handle()),
 		);
 
-		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
+		// let slot_duration = sc_consensus_babe::configuration::slot_duration(&*client)?;
+		// let slot_duration = babe_link.config().slot_duration();
+
+		// get slot_duration from client.runtimeApi
+		//let slot_duration = client.runtime_api().slot_duration().map_err(|e| {
+		//	sc_cli::Error::Service(format!("Failed to get slot_duration from runtimeApi: {:?}", e))
+		//})?;
+
 		let target_gas_price = eth_config.target_gas_price;
+		
 		let create_inherent_data_providers = move |_, ()| async move {
 			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+			let slot = sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
 				*timestamp,
 				slot_duration,
 			);
@@ -455,7 +554,25 @@ where
 			Ok((slot, timestamp, dynamic_fee))
 		};
 
-		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
+		let babe_config = sc_consensus_babe::BabeParams {
+			keystore: keystore_container.sync_keystore(),
+			client: client.clone(),
+			select_chain,
+			env: proposer_factory,
+			block_import,
+			sync_oracle: network.clone(),
+			justification_sync_link: network.clone(),
+			create_inherent_data_providers,
+			force_authoring,
+			backoff_authoring_blocks: Option::<()>::None,
+			babe_link,
+			block_proposal_slot_portion: SlotProportion::new(0.5),
+			max_block_proposal_slot_portion: None,
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
+		};
+
+		/*
+		let aura = sc_consensus_babe::start_babe::<Pair, _, _, _, _, _, _, _, _, _, _>(
 			sc_consensus_aura::StartAuraParams {
 				slot_duration,
 				client,
@@ -468,17 +585,19 @@ where
 				force_authoring,
 				backoff_authoring_blocks: Option::<()>::None,
 				keystore: keystore_container.sync_keystore(),
-				block_proposal_slot_portion: sc_consensus_aura::SlotProportion::new(2f32 / 3f32),
+				block_proposal_slot_portion: sc_consensus_babe::SlotProportion::new(2f32 / 3f32),
 				max_block_proposal_slot_portion: None,
 				telemetry: telemetry.as_ref().map(|x| x.handle()),
-				compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
+				compatibility_mode: sc_consensus_babe::CompatibilityMode::None,
 			},
 		)?;
-		// the AURA authoring task is considered essential, i.e. if it
+		*/
+		let babe = sc_consensus_babe::start_babe(babe_config)?;
+		// the BABE authoring task is considered essential, i.e. if it
 		// fails we take down the service with it.
 		task_manager
 			.spawn_essential_handle()
-			.spawn_blocking("aura", Some("block-authoring"), aura);
+			.spawn_blocking("babe-proposer", Some("block-authoring"), babe);
 	}
 
 	if enable_grandpa {
@@ -659,7 +778,7 @@ pub fn new_chain_ops(
 	} = new_partial::<frontier_template_runtime::RuntimeApi, TemplateRuntimeExecutor, _>(
 		config,
 		eth_config,
-		build_aura_grandpa_import_queue,
+		build_babe_grandpa_import_queue,
 	)?;
 	Ok((client, backend, import_queue, task_manager, other.3))
 }

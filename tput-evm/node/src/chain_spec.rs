@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 // Substrate
-use sc_service::ChainType;
+use sc_service::{ ChainType, Properties };
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, storage::Storage, Pair, Public, H160, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -10,7 +10,7 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 // Frontier
 use frontier_template_runtime::{
-	AccountId, Signature, WASM_BINARY, Balance,  
+	AccountId, Signature, WASM_BINARY, Balance, EnableManualSeal,
 	GenesisConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig, DOLLARS,
 };
 
@@ -63,7 +63,7 @@ where
 }
 
 /// Generate an Babe authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
+pub fn authority_keys_from_seed(s: &str) -> (BabeId, GrandpaId) {
 	(get_from_seed::<BabeId>(s), get_from_seed::<GrandpaId>(s))
 }
 
@@ -175,7 +175,7 @@ fn testnet_genesis(
 	wasm_binary: &[u8],
 	sudo_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
-	initial_authorities: Vec<(AuraId, GrandpaId)>,
+	initial_authorities: Vec<(BabeId, GrandpaId)>,
 	chain_id: u64,
 ) -> GenesisConfig {
 	use frontier_template_runtime::{

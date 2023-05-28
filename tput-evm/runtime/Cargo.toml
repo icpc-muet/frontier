@@ -40,6 +40,7 @@ frame-try-runtime = { workspace = true, optional = true }
 
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-system-rpc-runtime-api = { workspace = true }
+frame-election-provider-support = { workspace = true }
 # pallet-aura = { workspace = true }
 pallet-babe = { workspace = true }
 pallet-bags-list = { workspace = true }
@@ -75,6 +76,9 @@ pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
 pallet-hotfix-sufficients = { workspace = true }
 
+node-primitives = { version = "2.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", default-features = false }
+
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
 
@@ -107,6 +111,7 @@ std = [
 	"frame-system/std",
 	"frame-system-rpc-runtime-api/std",
 	"frame-system-benchmarking/std",
+	"frame-election-provider-support/std",
 	# "pallet-aura/std",
 	"pallet-babe/std",
 	"pallet-bags-list/std",
