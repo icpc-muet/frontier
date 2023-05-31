@@ -242,7 +242,7 @@ pub fn claim_slot_using_keys(
 fn claim_primary_slot(
 	slot: Slot,
 	epoch: &Epoch,
-	c: (u64, u64),
+	_c: (u64, u64),
 	keystore: &SyncCryptoStorePtr,
 	keys: &[(AuthorityId, usize)],
 	p_author: u32, // w3v changes

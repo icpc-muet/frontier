@@ -1,9 +1,33 @@
 [workspace]
 members = [
 	"frame/babe",
+	"frame/frontier/base-fee",
+	"frame/frontier/dynamic-fee",
+	"frame/frontier/ethereum",
+	"frame/frontier/evm",
+	"frame/frontier/evm-chain-id",
+	"frame/frontier/hotfix-sufficients",
+	"frame/frontier/evm/precompile/sha3fips",
+	"frame/frontier/evm/precompile/simple",
+	"frame/frontier/evm/precompile/modexp",
+	"frame/frontier/evm/precompile/ed25519",
+	"frame/frontier/evm/precompile/bn128",
+	"frame/frontier/evm/precompile/blake2",
+	"frame/frontier/evm/precompile/dispatch",
+	"frame/frontier/evm/precompile/curve25519",
 	"client/consensus/babe",
-	# "client/consensus/babe/rpc",
+	"client/frontier/consensus",
+	"client/frontier/rpc-core",
+	"client/frontier/rpc",
+	"client/frontier/db",
+	"client/frontier/storage",
+	"client/frontier/mapping-sync",
 	"primitives/consensus/babe",
+	"primitives/frontier/consensus",
+	"primitives/frontier/dynamic-fee",
+	"primitives/frontier/evm",
+	"primitives/frontier/rpc",
+	"primitives/frontier/self-contained",
 	"node",
 	"runtime",
 	
@@ -121,6 +145,10 @@ pallet-contracts-primitives = { version = "7.0.0", git = "https://github.com/par
 pallet-randomness-collective-flip = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 pallet-authorship = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 pallet-session = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
+pallet-atomic-swap = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", default-features = false }
+# add multisig pallet
+pallet-multisig = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", default-features = false }
+
 
 # Substrate Utility
 frame-benchmarking-cli = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
@@ -130,32 +158,32 @@ substrate-frame-rpc-system = { version = "4.0.0-dev", git = "https://github.com/
 substrate-test-runtime-client = { version = "2.0.0", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 # Frontier Client
-fc-cli = { version = "1.0.0-dev", path = "../client/cli" }
-fc-consensus = { version = "2.0.0-dev", path = "../client/consensus" }
-fc-db = { version = "2.0.0-dev", path = "../client/db" }
-fc-mapping-sync = { version = "2.0.0-dev", path = "../client/mapping-sync" }
-fc-rpc = { version = "2.0.0-dev", path = "../client/rpc" }
-fc-rpc-core = { version = "1.1.0-dev", path = "../client/rpc-core" }
-fc-storage = { version = "1.0.0-dev", path = "../client/storage" }
+fc-cli = { version = "1.0.0-dev", path = "./client/frontier/cli" }
+fc-consensus = { version = "2.0.0-dev", path = "./client/frontier/consensus" }
+fc-db = { version = "2.0.0-dev", path = "./client/frontier/db" }
+fc-mapping-sync = { version = "2.0.0-dev", path = "./client/frontier/mapping-sync" }
+fc-rpc = { version = "2.0.0-dev", path = "./client/frontier/rpc" }
+fc-rpc-core = { version = "1.1.0-dev", path = "./client/frontier/rpc-core" }
+fc-storage = { version = "1.0.0-dev", path = "./client/frontier/storage" }
 # Frontier Primitive
-fp-consensus = { version = "2.0.0-dev", path = "../primitives/consensus", default-features = false }
-fp-dynamic-fee = { version = "1.0.0", path = "../primitives/dynamic-fee", default-features = false }
-fp-ethereum = { version = "1.0.0-dev", path = "../primitives/ethereum", default-features = false }
-fp-evm = { version = "3.0.0-dev", path = "../primitives/evm", default-features = false }
-fp-rpc = { version = "3.0.0-dev", path = "../primitives/rpc", default-features = false }
-fp-self-contained = { version = "1.0.0-dev", path = "../primitives/self-contained", default-features = false }
-fp-storage = { version = "2.0.0", path = "../primitives/storage", default-features = false }
+fp-consensus = { version = "2.0.0-dev", path = "./primitives/frontier/consensus", default-features = false }
+fp-dynamic-fee = { version = "1.0.0", path = "./primitives/frontier/dynamic-fee", default-features = false }
+fp-ethereum = { version = "1.0.0-dev", path = "./primitives/frontier/ethereum", default-features = false }
+fp-evm = { version = "3.0.0-dev", path = "./primitives/frontier/evm", default-features = false }
+fp-rpc = { version = "3.0.0-dev", path = "./primitives/frontier/rpc", default-features = false }
+fp-self-contained = { version = "1.0.0-dev", path = "./primitives/frontier/self-contained", default-features = false }
+fp-storage = { version = "2.0.0", path = "./primitives/frontier/storage", default-features = false }
 # Frontier FRAME
-pallet-base-fee = { version = "1.0.0", path = "../frame/base-fee", default-features = false }
-pallet-dynamic-fee = { version = "4.0.0-dev", path = "../frame/dynamic-fee", default-features = false }
-pallet-ethereum = { version = "4.0.0-dev", path = "../frame/ethereum", default-features = false }
-pallet-evm = { version = "6.0.0-dev", path = "../frame/evm", default-features = false }
-pallet-evm-chain-id = { version = "1.0.0-dev", path = "../frame/evm-chain-id", default-features = false }
-pallet-evm-precompile-modexp = { version = "2.0.0-dev", path = "../frame/evm/precompile/modexp", default-features = false }
-pallet-evm-precompile-sha3fips = { version = "2.0.0-dev", path = "../frame/evm/precompile/sha3fips", default-features = false }
-pallet-evm-precompile-simple = { version = "2.0.0-dev", path = "../frame/evm/precompile/simple", default-features = false }
-pallet-evm-test-vector-support = { version = "1.0.0-dev", path = "../frame/evm/test-vector-support" }
-pallet-hotfix-sufficients = { version = "1.0.0", path = "../frame/hotfix-sufficients", default-features = false }
+pallet-base-fee = { version = "1.0.0", path = "./frame/frontier/base-fee", default-features = false }
+pallet-dynamic-fee = { version = "4.0.0-dev", path = "./frame/frontier/dynamic-fee", default-features = false }
+pallet-ethereum = { version = "4.0.0-dev", path = "./frame/frontier/ethereum", default-features = false }
+pallet-evm = { version = "6.0.0-dev", path = "./frame/frontier/evm", default-features = false }
+pallet-evm-chain-id = { version = "1.0.0-dev", path = "./frame/frontier/evm-chain-id", default-features = false }
+pallet-evm-precompile-modexp = { version = "2.0.0-dev", path = "./frame/frontier/evm/precompile/modexp", default-features = false }
+pallet-evm-precompile-sha3fips = { version = "2.0.0-dev", path = "./frame/frontier/evm/precompile/sha3fips", default-features = false }
+pallet-evm-precompile-simple = { version = "2.0.0-dev", path = "./frame/frontier/evm/precompile/simple", default-features = false }
+pallet-evm-test-vector-support = { version = "1.0.0-dev", path = "./frame/frontier/evm/test-vector-support" }
+pallet-hotfix-sufficients = { version = "1.0.0", path = "./frame/frontier/hotfix-sufficients", default-features = false }
 # Frontier Template
 frontier-template-runtime = { path = "./runtime", default-features = false, features = ["std"] }
 

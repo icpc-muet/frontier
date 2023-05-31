@@ -63,8 +63,11 @@ where
 }
 
 /// Generate an Babe authority key.
-pub fn authority_keys_from_seed(s: &str) -> (BabeId, GrandpaId) {
-	(get_from_seed::<BabeId>(s), get_from_seed::<GrandpaId>(s))
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, BabeId, GrandpaId) {
+	(
+		get_account_id_from_seed::<sr25519::Public>(s),
+		get_from_seed::<BabeId>(s),
+		get_from_seed::<GrandpaId>(s))
 }
 
 pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
@@ -95,7 +98,7 @@ pub fn development_config(enable_manual_seal: Option<bool>) -> DevChainSpec {
 						get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 					],
 					// Initial PoA authorities
-					vec![authority_keys_from_seed("Alice")],
+					vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
 					42,
 				),
 				enable_manual_seal,
@@ -152,6 +155,8 @@ pub fn local_testnet_config() -> ChainSpec {
 				vec![
 					authority_keys_from_seed("Alice"),
 					authority_keys_from_seed("Bob"),
+					authority_keys_from_seed("Charlie"),
+					authority_keys_from_seed("Dave"),
 				],
 				42,
 			)
@@ -175,7 +180,7 @@ fn testnet_genesis(
 	wasm_binary: &[u8],
 	sudo_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
-	initial_authorities: Vec<(BabeId, GrandpaId)>,
+	initial_authorities: Vec<(AccountId, BabeId, GrandpaId)>,
 	chain_id: u64,
 ) -> GenesisConfig {
 	use frontier_template_runtime::{

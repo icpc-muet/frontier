@@ -60,6 +60,9 @@ pallet-contracts = { workspace = true }
 pallet-contracts-primitives = { workspace = true }
 pallet-randomness-collective-flip = { workspace = true }
 
+pallet-atomic-swap = { workspace = true }
+pallet-multisig = { workspace = true }
+
 
 # Frontier
 fp-evm = { workspace = true }
@@ -92,7 +95,6 @@ std = [
 	# Substrate
 	"sp-api/std",
 	"sp-block-builder/std",
-	# "sp-consensus-aura/std",
 	"sp-core/std",
 	"sp-inherents/std",
 	"sp-offchain/std",
@@ -112,7 +114,6 @@ std = [
 	"frame-system-rpc-runtime-api/std",
 	"frame-system-benchmarking/std",
 	"frame-election-provider-support/std",
-	# "pallet-aura/std",
 	"pallet-babe/std",
 	"pallet-bags-list/std",
 	"pallet-election-provider-multi-phase/std",
@@ -128,6 +129,8 @@ std = [
 	"pallet-contracts/std",
 	"pallet-contracts-primitives/std",
 	"pallet-randomness-collective-flip/std",
+	"pallet-atomic-swap/std",
+	"pallet-multisig/std",
 	# Frontier
 	"fp-evm/std",
 	"fp-rpc/std",
